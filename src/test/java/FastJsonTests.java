@@ -1,5 +1,7 @@
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
+import com.alibaba.fastjson.parser.Feature;
+import com.alibaba.fastjson.serializer.PropertyFilter;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.example.entity.*;
 import org.junit.Assert;
@@ -68,7 +70,7 @@ public class FastJsonTests {
     }
 
     @Test
-    public void test(){
+    public void testList(){
         List<User4> user4List=new ArrayList<>();
         User4 mary=new User4(2L,"Mary",18,Gender.Female);
         User4 susan=new User4(2L,"Susan",18,Gender.Female);
@@ -81,15 +83,67 @@ public class FastJsonTests {
                 JSON.toJSONString(tom,SerializerFeature.WriteEnumUsingToString));
         System.out.println(JSON.toJSONString(tom));
         System.out.println(JSON.toJSONString(tom,SerializerFeature.WriteEnumUsingToString));
-        System.out.println(JSON.toJSONString(user4List));
         String a="[{\"age\":18,\"gender\":\"Female\",\"id\":2,\"name\":\"Mary\"},{\"age\":18,\"gender\":\"Female\",\"id\":2,\"name\":\"Susan\"}]";
+        //序列化泛型List
         List<User4> list1=JSON.parseArray(a,User4.class);
         List<User4> list2=JSON.parseObject(a, new TypeReference<List<User4>>(){});
-        Type type=new TypeReference<List<User4>>(){}.getType();
-        List<User4> list3=JSON.parseObject(a, type);
-
-
+        Assert.assertEquals(list1,list2);
     }
 
+    @Test
+    public void testTime(){
+        Time t1=new Time(new Date(),"",0L);
+        Time t2=new Time(null,"2017-09-25",0L);
+        Time t3=new Time(null,"",1506308576672L);
+        //Serialize
+        System.out.println(JSON.toJSONStringWithDateFormat(t1,"yyyy-MM-dd HH:mm:ss.SSS"));
+        System.out.println(JSON.toJSONString(t1));
+        System.out.println(JSON.toJSONStringWithDateFormat(t2,"yyyy-MM-dd HH:mm:ss.SSS"));
+        System.out.println(JSON.toJSONString(t1, SerializerFeature.UseISO8601DateFormat));
+        //deSerialize
+        /**
+         *  反序列化能够自动识别如下日期格式
+         *  ISO-8601日期格式
+         *  yyyy-MM-dd
+         *  yyyy-MM-dd HH:mm:ss
+         *  yyyy-MM-dd HH:mm:ss.SSS
+         *  毫秒数字
+         *  毫秒数字字符串
+         *  .NET JSON日期格式
+         *  new Date(1982932381111)
+         */
+        System.out.println(JSON.parseObject("{\"date1\":\"2017-09-25 11:11:27.190\",\"date2\":\"\",\"date3\":0}",Time.class));
+        System.out.println(JSON.parseObject("{\"date1\":\"2017-09-25T11:11:27.634+08:00\",\"date2\":\"\",\"date3\":0}",Time.class));
+        System.out.println(JSON.parseObject("{\"date1\":1506308576672,\"date2\":\"\",\"date3\":0}",Time.class));
+    }
+
+    /**
+     * SerializeFilter是通过编程扩展的方式定制序列化。fastjson支持6种SerializeFilter，用于不同场景的定制序列化。
+     * PropertyPreFilter 根据PropertyName判断是否序列化
+     * PropertyFilter 根据PropertyName和PropertyValue来判断是否序列化
+     * NameFilter 修改Key，如果需要修改Key,process返回值则可
+     * ValueFilter 修改Value
+     * BeforeFilter 序列化时在最前添加内容
+     * AfterFilter 序列化时在最后添加内容
+     */
+    @Test
+    public void testFilter(){
+        User5 u5first=new User5(1,"age",18);
+        /**
+         * PropertyFilter 根据PropertyName和PropertyValue来判断是否序列化
+         */
+        PropertyFilter filter = new PropertyFilter() {
+
+            public boolean apply(Object source, String name, Object value) {
+                if (name.equalsIgnoreCase("age")) {
+                   if((int)value>100){
+                       return false;
+                   }
+                }
+                return true;
+            }
+        };
+        System.out.println(JSON.toJSONString(u5first, filter)); // 序列化的时候传入filter
+    }
 
 }
