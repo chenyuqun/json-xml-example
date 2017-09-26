@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import java.util.Date;
 
 /**
- * Created by alexchen on 2017/9/25.
+ * 时间类
  */
 @Data
 @AllArgsConstructor

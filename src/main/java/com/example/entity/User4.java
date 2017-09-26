@@ -5,7 +5,7 @@ import lombok.*;
 import java.util.List;
 
 /**
- * Created by alexchen on 2017/9/22.
+ * 测试枚举类 泛型 自循环
  */
 @Data
 @AllArgsConstructor
