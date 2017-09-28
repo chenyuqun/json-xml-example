@@ -1,10 +1,6 @@
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
-import com.alibaba.fastjson.parser.Feature;
-import com.alibaba.fastjson.serializer.PropertyFilter;
-import com.alibaba.fastjson.serializer.PropertyPreFilter;
-import com.alibaba.fastjson.serializer.SerializerFeature;
-import com.alibaba.fastjson.serializer.SimplePropertyPreFilter;
+import com.alibaba.fastjson.serializer.*;
 import com.example.entity.*;
 import org.junit.Assert;
 import org.junit.Test;
@@ -12,7 +8,7 @@ import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.lang.reflect.Type;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -122,10 +118,6 @@ public class FastJsonTests {
 
     /**
      * SerializeFilter是通过编程扩展的方式定制序列化。fastjson支持6种SerializeFilter，用于不同场景的定制序列化。
-     * NameFilter 修改Key，如果需要修改Key,process返回值则可
-     * ValueFilter 修改Value
-     * BeforeFilter 序列化时在最前添加内容
-     * AfterFilter 序列化时在最后添加内容
      */
     @Test
     public void testFilter() {
@@ -136,7 +128,7 @@ public class FastJsonTests {
          * 只序列化部分字段
          */
         SimplePropertyPreFilter simplePropertyPreFilter=new SimplePropertyPreFilter(User5.class,new String[]{"id","name"});
-        System.out.println("SimplePropertyPreFilter --> " + JSON.toJSONString(u5first, simplePropertyPreFilter));
+        System.out.println("SimplePropertyPreFilter : " + JSON.toJSONString(u5first, simplePropertyPreFilter));
         /**
          * PropertyFilter 根据PropertyName和PropertyValue来判断是否序列化
          * 过滤age大于100的人
@@ -148,7 +140,75 @@ public class FastJsonTests {
                 return true;
             }
         };
-        System.out.println(JSON.toJSONString(u5first, propertyFilter)); // 序列化的时候传入filter
+        System.out.println("PropertyFilter : " + JSON.toJSONString(u5first, propertyFilter));
+        /**
+         * NameFilter 修改Key，如果需要修改Key,process返回值则可
+         */
+        NameFilter nameFilter=(Object source,String name,Object value)->{
+            if(name.equals("id")){
+                return "ID";
+            }
+            return name;
+        };
+        System.out.println("NameFilter :"+JSON.toJSONString(u5first,nameFilter));
+        /**
+         * ValueFilter 修改Value
+         */
+        ValueFilter valueFilter=(Object source,String name,Object value)->{
+            if(name.equals("name")){
+                return "Darwin";
+            }
+            return value;
+        };
+        System.out.println("ValueFilter :"+JSON.toJSONString(u5first,valueFilter));
+        /**
+         * BeforeFilter 序列化时在最前添加内容
+         */
+        BeforeFilter beforeFilter = new BeforeFilter() {
+            @Override
+            public void writeBefore(Object object) {
+                writeKeyValue("author", "陈煜群");
+            }
+        };
+        System.out.println("BeforeFilter :"+JSON.toJSONString(u5first,beforeFilter));
+        /**
+         * AfterFilter 序列化时在最后添加内容
+         */
+        AfterFilter afterFilter = new AfterFilter() {
+
+            @Override
+            public void writeAfter(Object object) {
+                writeKeyValue("serializeTime", new Date());
+            }
+        };
+        System.out.println("AfterFilter :"+JSON.toJSONString(u5first,afterFilter));
+        /**
+         * 在某些场景下，对Value做过滤，需要获得所属JavaBean的信息，包括类型、字段、方法等。在fastjson-1.2.9中，
+         * 提供了ContextValueFilter，类似于之前版本提供的ValueFilter，只是多了BeanContext参数可用。
+         */
+        ContextValueFilter contextValueFilter=(BeanContext context, Object object, String name, Object value)->{
+            Necessary necessary=context.getField().getAnnotation(Necessary.class);
+            if(necessary==null){
+                return "necessary_"+value;
+            }else{
+                return  "unnecessary_"+value;
+            }
+
+        };
+        System.out.println("ContextValueFilter :"+JSON.toJSONString(u5first,contextValueFilter));
+        /**
+         * 根据JSONFiled的Label属性过滤
+         */
+        LabelFilter labelFilter=(String label)->{
+            if(label.equals("ignore")){
+                return false;
+            }else{
+                return true;
+            }
+        };
+
+        System.out.println("LableFilter :"+JSON.toJSONString(u5first,labelFilter));
+
     }
 
 }
