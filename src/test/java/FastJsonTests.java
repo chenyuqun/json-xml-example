@@ -1,7 +1,8 @@
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONReader;
+import com.alibaba.fastjson.JSONWriter;
 import com.alibaba.fastjson.TypeReference;
 import com.alibaba.fastjson.serializer.*;
-import com.alibaba.fastjson.util.ASMUtils;
 import com.example.entity.*;
 import org.junit.Assert;
 import org.junit.Test;
@@ -9,10 +10,11 @@ import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Created by alexchen on 2017/9/20.
@@ -20,6 +22,9 @@ import java.util.List;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {com.example.Application.class})
 public class FastJsonTests {
+
+    public FastJsonTests() throws FileNotFoundException {
+    }
 
     /**
      * 普通对象的序列化和反序列化方法
@@ -211,9 +216,87 @@ public class FastJsonTests {
         System.out.println("LabelFilter :"+JSON.toJSONString(u5first,Labels.excludes("ignore")));
     }
 
+    /**
+     * unwrapped测试类 注意对象属性或者map名字不能重复，虽然不会报错但是会覆盖
+     */
     @Test
     public void testUnwrapped(){
+        Unwrapped unwrapped=new Unwrapped();
+        unwrapped.setId(123);
+        unwrapped.setName("Alex");
+        unwrapped.setAge(18);
+        unwrapped.setLocation(new Location(127,37));
+        String text=JSON.toJSONString(unwrapped);
+        Assert.assertEquals("{\"age\":18,\"id\":123,\"latitude\":37,\"longitude\":127,\"name\":\"Alex\"}",text);
+        Unwrapped unwrapped1=JSON.parseObject(text,Unwrapped.class);
+        Assert.assertEquals(unwrapped.getLocation().getLatitude(),unwrapped1.getLocation().getLatitude());
+        unwrapped.setLocation(null);
+        Map<String,Object> properties=new LinkedHashMap<>();
+        properties.put("latitude", 37);
+        properties.put("longitude", 127);
+        unwrapped.setProperties(properties);
+        String text1=JSON.toJSONString(unwrapped);
+        Assert.assertEquals("{\"age\":18,\"id\":123,\"name\":\"Alex\",\"latitude\":37,\"longitude\":127}",text1);
+    }
 
+    /**
+     * <a href="https://github.com/alibaba/fastjson/wiki/Stream-api">Stream api</>
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testWriter() throws IOException{
+        /**
+         * 超大JSON数组序列化
+         * 如果你的JSON格式是一个巨大的JSON数组，有很多元素，则先调用startArray，然后挨个写入对象，然后调用endArray。
+         */
+        JSONWriter writer = new JSONWriter(new FileWriter("array.json"));
+        writer.startArray();
+        for (int i = 0; i < 1000 ; ++i) {
+            User user=new User(Long.valueOf(i),"Alex",new Random().nextInt(50));
+            writer.writeValue(user);
+        }
+        writer.endArray();
+        writer.close();
+        /**
+         * 超大JSON对象序列化
+         * 如果你的JSON格式是一个巨大的JSONObject，有很多Key/Value对，
+         * 则先调用startObject，然后挨个写入Key和Value，然后调用endObject。
+         */
+        JSONWriter writer2 = new JSONWriter(new FileWriter("object.json"));
+        writer2.startObject();
+        for (int i = 0; i < 1000 ; ++i) {
+            writer2.writeKey("key" + i);
+            writer2.writeValue(new User(Long.valueOf(i),"alex",new Random().nextInt(50)));
+        }
+        writer2.endObject();
+        writer2.close();
+        //反序列化
+        JSONReader reader = new JSONReader(new FileReader("array.json"));
+        reader.startArray();
+        int count=0;int count2=0;
+        while(reader.hasNext()) {
+            User vo = reader.readObject(User.class);
+            if(vo.getAge()>=18){
+                count++;
+            }
+        }
+        reader.endArray();
+        reader.close();
+
+        JSONReader reader2 = new JSONReader(new FileReader("object.json"));
+        reader2.startObject();
+        while(reader2.hasNext()) {
+            String key = reader2.readString();
+            User user = reader2.readObject(User.class);
+            if(user.getId()>=500&&user.getAge()>=18){
+                count2++;
+            }
+            // handle vo ...
+        }
+        reader2.endObject();
+        reader2.close();
+        System.out.println("count:"+count+"count2:"+count2);
     }
 
 }

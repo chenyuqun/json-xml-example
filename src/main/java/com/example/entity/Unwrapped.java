@@ -1,9 +1,20 @@
 package com.example.entity;
 
+import com.alibaba.fastjson.annotation.JSONField;
+import lombok.Data;
+
+import java.util.Map;
+
 /**
- * Created by alexchen on 2017/9/28.
+ * 测试包装类
  */
+@Data
 public class Unwrapped {
-    private int id;
+    private Integer id;
+    private String name;
+    private Integer age;
+    @JSONField(unwrapped = true)
     private Location location;
+    @JSONField(unwrapped = true)
+    private Map<String,Object> properties;
 }
