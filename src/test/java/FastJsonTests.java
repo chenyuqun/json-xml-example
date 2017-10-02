@@ -51,6 +51,10 @@ public class FastJsonTests {
                 JSON.parseObject("{\"age\":18,\"id\":3,\"name\":\"alex\"}", IgnoreField1.class).getAge());
     }
 
+    /**
+     * fastjson缺省时会使用字母序序列化，如果你是希望按照java fields/getters的自然顺序序列化，可以配置JSONType.alphabetic
+     * 也可以用JSONField中的oridinal来确定顺序
+     */
     @Test
     public void testOrder() {
         User u = new User(3L, "alex", 18);
@@ -59,6 +63,9 @@ public class FastJsonTests {
         Assert.assertNotEquals(JSON.toJSONString(u), JSON.toJSONString(u2));
     }
 
+    /**
+     * JSONField相关属性测试
+     */
     @Test
     public void testJSONField() {
         User3 u3 = new User3(1L, null, 13, new Date(1506046315000L), 1000);
@@ -73,6 +80,9 @@ public class FastJsonTests {
                 "\"2017-09-22\",\"salary\":\"1000\"}", User3.class));
     }
 
+    /**
+     * 测试list
+     */
     @Test
     public void testList() {
         List<User4> user4List = new ArrayList<>();
@@ -95,6 +105,9 @@ public class FastJsonTests {
         Assert.assertEquals(list1, list2);
     }
 
+    /**
+     * 时间相关序列化
+     */
     @Test
     public void testTime() {
         Time t1 = new Time(new Date(), "", 0L);
@@ -299,4 +312,32 @@ public class FastJsonTests {
         System.out.println("count:"+count+"count2:"+count2);
     }
 
+    /**
+     * 在fastjson-1.2.9版本后提供了ExtraProcessable接口，用于定制对象的反序列化功能
+     * 如果对象没有对应public setter和public field，就会调用processExtra方法。
+     * 这个可以用于一些框架实现MapBean对象的json序列化和反序列化。
+     */
+    @Test
+    public void testExtraProcess(){
+        User6 user1 = new User6();
+        user1.setName("wenshao");
+
+        String text1 = JSON.toJSONString(user1);
+
+        Assert.assertEquals("{\"name\":\"wenshao\"}", text1);
+        String text2 = "{\"name\":\"wenshao\",\"id\":1001}";
+
+        User6 user2 = JSON.parseObject(text2, User6.class);
+        ExtraProcess extraProcess=JSON.parseObject(text2,ExtraProcess.class);
+        Assert.assertEquals("wenshao", user2.getName());
+        Assert.assertEquals(1001, user2.getAttribute("id"));
+    }
+
+    /**
+     * @see <a herf="https://github.com/alibaba/fastjson/wiki/JSONPath"></>
+     */
+    @Test
+    public void JSONPath(){
+
+    }
 }
