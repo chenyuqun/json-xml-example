@@ -1,7 +1,4 @@
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONReader;
-import com.alibaba.fastjson.JSONWriter;
-import com.alibaba.fastjson.TypeReference;
+import com.alibaba.fastjson.*;
 import com.alibaba.fastjson.serializer.*;
 import com.example.entity.*;
 import org.junit.Assert;
@@ -338,6 +335,13 @@ public class FastJsonTests {
      */
     @Test
     public void JSONPath(){
-
+        User8 u1=new User8(1,"alex",new Object());
+        User8 u2=new User8(2,"susan",new Object());
+        User8 u3=new User8(3,"sara");
+        List<User8> uList=Arrays.asList(u1,u2,u3);
+        List<User8> result=(List<User8>)JSONPath.eval(uList,"[1,2]");
+        List<User8> uList2=(List<User8>)JSONPath.eval(uList,"[id=1]");
+        Assert.assertSame(JSONPath.eval(u1,"$.id"),1);
+        Assert.assertEquals(u1,uList2.get(0));
     }
 }
