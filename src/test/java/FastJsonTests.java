@@ -344,4 +344,15 @@ public class FastJsonTests {
         Assert.assertSame(JSONPath.eval(u1,"$.id"),1);
         Assert.assertEquals(u1,uList2.get(0));
     }
+
+    @Test
+    public void testJSONCreator(){
+        User9 u9=new User9(1,"Alex");
+        System.out.println(JSON.toJSONString(u9));
+        System.out.println(JSON.parseObject("{\"ID\":1,\"name\":\"Alex\"}",User9.class));
+        User10 u10 = JSON.parseObject("{\"id\":1,\"name\":\"ljw\"}", User10.class);
+        Assert.assertEquals(u10.getId().intValue(),1 );
+        Assert.assertEquals("ljw", u10.getName());
+
+    }
 }
